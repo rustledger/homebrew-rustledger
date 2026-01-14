@@ -1,30 +1,29 @@
-# Homebrew formula for rustledger (prerelease channel)
-# For stable releases, use homebrew-core when available
+# Homebrew formula for rustledger
 class Rustledger < Formula
   desc "Fast, pure Rust implementation of Beancount double-entry accounting"
   homepage "https://rustledger.github.io"
-  version "1.0.0-rc.18"
+  version "0.1.0"
   license "GPL-3.0-only"
 
   on_macos do
     on_arm do
-      url "https://github.com/rustledger/rustledger/releases/download/v1.0.0-rc.18/rustledger-v1.0.0-rc.18-aarch64-apple-darwin.tar.gz"
-      sha256 "3caacf8352eb8bd65ec8d0614a8e6fa1a2535c19d6d14e80393ee8185b1d91d6"
+      url "https://github.com/rustledger/rustledger/releases/download/v0.1.0/rustledger-v0.1.0-aarch64-apple-darwin.tar.gz"
+      sha256 "fc2d01ec90d188e8435a0ef0d941edc8375bfa7ea11cc59d7aeef745027e0e45"
     end
     on_intel do
-      url "https://github.com/rustledger/rustledger/releases/download/v1.0.0-rc.18/rustledger-v1.0.0-rc.18-x86_64-apple-darwin.tar.gz"
-      sha256 "cab86a041e3e70678b3f9deba0fa614880e19da8d337efe11b1be82c253d2084"
+      url "https://github.com/rustledger/rustledger/releases/download/v0.1.0/rustledger-v0.1.0-x86_64-apple-darwin.tar.gz"
+      sha256 "c866d346dc5d62626e68214371ec8e7dc17c5353047503a170323d291ff5487a"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/rustledger/rustledger/releases/download/v1.0.0-rc.18/rustledger-v1.0.0-rc.18-aarch64-unknown-linux-gnu.tar.gz"
-      sha256 "cec68f53c14a126811027ffaad2d1d8d1bbea683ac91698d5f5227364dcaa6f8"
+      url "https://github.com/rustledger/rustledger/releases/download/v0.1.0/rustledger-v0.1.0-aarch64-unknown-linux-gnu.tar.gz"
+      sha256 "fdeacb608b2bbc11b9ce5865bf79461e256235af451a01ce16edbf326790fb55"
     end
     on_intel do
-      url "https://github.com/rustledger/rustledger/releases/download/v1.0.0-rc.18/rustledger-v1.0.0-rc.18-x86_64-unknown-linux-gnu.tar.gz"
-      sha256 "bee40ac1bc93f2df36eae0bb4a17666822771deba4bf31952bd8bc7386412a84"
+      url "https://github.com/rustledger/rustledger/releases/download/v0.1.0/rustledger-v0.1.0-x86_64-unknown-linux-gnu.tar.gz"
+      sha256 "43058e026e221336587a95d0dd8576ce54757f376435f7a2eb25ae2b8186656e"
     end
   end
 
