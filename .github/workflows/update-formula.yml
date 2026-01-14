@@ -23,6 +23,8 @@ jobs:
           else
             VERSION="${{ github.event.inputs.version }}"
           fi
+          # Strip "v" prefix if present
+          VERSION="${VERSION#v}"
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Updating to version: $VERSION"
 
