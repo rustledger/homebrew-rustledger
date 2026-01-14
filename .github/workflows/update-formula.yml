@@ -1,0 +1,119 @@
+name: Update Formula
+
+on:
+  repository_dispatch:
+    types: [release]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to update to (e.g., 1.0.0-rc.18)'
+        required: true
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            VERSION="${{ github.event.client_payload.version }}"
+          else
+            VERSION="${{ github.event.inputs.version }}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Updating to version: $VERSION"
+
+      - name: Download checksums
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          gh release download "v${VERSION}" \
+            --repo rustledger/rustledger \
+            --pattern "*.sha256" \
+            --dir checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Update formula
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+
+          # Extract checksums
+          SHA_MACOS_ARM=$(grep "aarch64-apple-darwin.tar.gz" checksums/*.sha256 | cut -d' ' -f1)
+          SHA_MACOS_INTEL=$(grep "x86_64-apple-darwin.tar.gz" checksums/*.sha256 | cut -d' ' -f1)
+          SHA_LINUX_ARM=$(grep "aarch64-unknown-linux-gnu.tar.gz" checksums/*.sha256 | cut -d' ' -f1)
+          SHA_LINUX_INTEL=$(grep "x86_64-unknown-linux-gnu.tar.gz" checksums/*.sha256 | cut -d' ' -f1)
+
+          # Update formula
+          cat > Formula/rustledger.rb << 'FORMULA_EOF'
+          # Homebrew formula for rustledger (prerelease channel)
+          # For stable releases, use homebrew-core when available
+          class Rustledger < Formula
+            desc "Fast, pure Rust implementation of Beancount double-entry accounting"
+            homepage "https://rustledger.github.io"
+            version "VERSION_PLACEHOLDER"
+            license "GPL-3.0-only"
+
+            on_macos do
+              on_arm do
+                url "https://github.com/rustledger/rustledger/releases/download/vVERSION_PLACEHOLDER/rustledger-vVERSION_PLACEHOLDER-aarch64-apple-darwin.tar.gz"
+                sha256 "SHA_MACOS_ARM_PLACEHOLDER"
+              end
+              on_intel do
+                url "https://github.com/rustledger/rustledger/releases/download/vVERSION_PLACEHOLDER/rustledger-vVERSION_PLACEHOLDER-x86_64-apple-darwin.tar.gz"
+                sha256 "SHA_MACOS_INTEL_PLACEHOLDER"
+              end
+            end
+
+            on_linux do
+              on_arm do
+                url "https://github.com/rustledger/rustledger/releases/download/vVERSION_PLACEHOLDER/rustledger-vVERSION_PLACEHOLDER-aarch64-unknown-linux-gnu.tar.gz"
+                sha256 "SHA_LINUX_ARM_PLACEHOLDER"
+              end
+              on_intel do
+                url "https://github.com/rustledger/rustledger/releases/download/vVERSION_PLACEHOLDER/rustledger-vVERSION_PLACEHOLDER-x86_64-unknown-linux-gnu.tar.gz"
+                sha256 "SHA_LINUX_INTEL_PLACEHOLDER"
+              end
+            end
+
+            def install
+              bin.install "rledger-check", "rledger-format", "rledger-query",
+                          "rledger-report", "rledger-doctor", "rledger-extract", "rledger-price"
+              bin.install "bean-check", "bean-format", "bean-query",
+                          "bean-report", "bean-doctor", "bean-extract", "bean-price"
+            end
+
+            test do
+              assert_match version.to_s, shell_output("#{bin}/rledger-check --version")
+
+              # Test basic validation
+              (testpath/"test.beancount").write <<~EOS
+                2024-01-01 open Assets:Bank:Checking USD
+                2024-01-01 open Expenses:Food USD
+
+                2024-01-15 * "Grocery Store" "Weekly groceries"
+                  Expenses:Food  50.00 USD
+                  Assets:Bank:Checking
+              EOS
+              system "#{bin}/rledger-check", testpath/"test.beancount"
+            end
+          end
+          FORMULA_EOF
+
+          # Replace placeholders
+          sed -i "s/VERSION_PLACEHOLDER/${VERSION}/g" Formula/rustledger.rb
+          sed -i "s/SHA_MACOS_ARM_PLACEHOLDER/${SHA_MACOS_ARM}/g" Formula/rustledger.rb
+          sed -i "s/SHA_MACOS_INTEL_PLACEHOLDER/${SHA_MACOS_INTEL}/g" Formula/rustledger.rb
+          sed -i "s/SHA_LINUX_ARM_PLACEHOLDER/${SHA_LINUX_ARM}/g" Formula/rustledger.rb
+          sed -i "s/SHA_LINUX_INTEL_PLACEHOLDER/${SHA_LINUX_INTEL}/g" Formula/rustledger.rb
+
+      - name: Commit and push
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/rustledger.rb
+          git commit -m "Update rustledger to ${VERSION}" || exit 0
+          git push
