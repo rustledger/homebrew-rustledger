@@ -42,74 +42,86 @@ jobs:
         run: |
           VERSION="${{ steps.version.outputs.version }}"
 
-          # Extract checksums
-          SHA_MACOS_ARM=$(grep "aarch64-apple-darwin.tar.gz" checksums/*.sha256 | cut -d' ' -f1)
-          SHA_MACOS_INTEL=$(grep "x86_64-apple-darwin.tar.gz" checksums/*.sha256 | cut -d' ' -f1)
-          SHA_LINUX_ARM=$(grep "aarch64-unknown-linux-gnu.tar.gz" checksums/*.sha256 | cut -d' ' -f1)
-          SHA_LINUX_INTEL=$(grep "x86_64-unknown-linux-gnu.tar.gz" checksums/*.sha256 | cut -d' ' -f1)
+          # Extract checksums (use grep -h to suppress filename prefix)
+          SHA_MACOS_ARM=$(grep -h "aarch64-apple-darwin.tar.gz" checksums/*.sha256 | cut -d' ' -f1)
+          SHA_MACOS_INTEL=$(grep -h "x86_64-apple-darwin.tar.gz" checksums/*.sha256 | cut -d' ' -f1)
+          SHA_LINUX_ARM=$(grep -h "aarch64-unknown-linux-gnu.tar.gz" checksums/*.sha256 | cut -d' ' -f1)
+          SHA_LINUX_INTEL=$(grep -h "x86_64-unknown-linux-gnu.tar.gz" checksums/*.sha256 | cut -d' ' -f1)
+
+          # Debug: show extracted checksums
+          echo "SHA_MACOS_ARM: $SHA_MACOS_ARM"
+          echo "SHA_MACOS_INTEL: $SHA_MACOS_INTEL"
+          echo "SHA_LINUX_ARM: $SHA_LINUX_ARM"
+          echo "SHA_LINUX_INTEL: $SHA_LINUX_INTEL"
 
           # Update formula
           cat > Formula/rustledger.rb << 'FORMULA_EOF'
-          # Homebrew formula for rustledger (prerelease channel)
-          # For stable releases, use homebrew-core when available
-          class Rustledger < Formula
-            desc "Fast, pure Rust implementation of Beancount double-entry accounting"
-            homepage "https://rustledger.github.io"
-            version "VERSION_PLACEHOLDER"
-            license "GPL-3.0-only"
+# Homebrew formula for rustledger
+# https://github.com/rustledger/rustledger
+class Rustledger < Formula
+  desc "Fast, pure Rust implementation of Beancount double-entry accounting"
+  homepage "https://rustledger.github.io"
+  version "VERSION_PLACEHOLDER"
+  license "GPL-3.0-only"
 
-            on_macos do
-              on_arm do
-                url "https://github.com/rustledger/rustledger/releases/download/vVERSION_PLACEHOLDER/rustledger-vVERSION_PLACEHOLDER-aarch64-apple-darwin.tar.gz"
-                sha256 "SHA_MACOS_ARM_PLACEHOLDER"
-              end
-              on_intel do
-                url "https://github.com/rustledger/rustledger/releases/download/vVERSION_PLACEHOLDER/rustledger-vVERSION_PLACEHOLDER-x86_64-apple-darwin.tar.gz"
-                sha256 "SHA_MACOS_INTEL_PLACEHOLDER"
-              end
-            end
+  on_macos do
+    on_arm do
+      url "https://github.com/rustledger/rustledger/releases/download/vVERSION_PLACEHOLDER/rustledger-vVERSION_PLACEHOLDER-aarch64-apple-darwin.tar.gz"
+      sha256 "SHA_MACOS_ARM_PLACEHOLDER"
+    end
+    on_intel do
+      url "https://github.com/rustledger/rustledger/releases/download/vVERSION_PLACEHOLDER/rustledger-vVERSION_PLACEHOLDER-x86_64-apple-darwin.tar.gz"
+      sha256 "SHA_MACOS_INTEL_PLACEHOLDER"
+    end
+  end
 
-            on_linux do
-              on_arm do
-                url "https://github.com/rustledger/rustledger/releases/download/vVERSION_PLACEHOLDER/rustledger-vVERSION_PLACEHOLDER-aarch64-unknown-linux-gnu.tar.gz"
-                sha256 "SHA_LINUX_ARM_PLACEHOLDER"
-              end
-              on_intel do
-                url "https://github.com/rustledger/rustledger/releases/download/vVERSION_PLACEHOLDER/rustledger-vVERSION_PLACEHOLDER-x86_64-unknown-linux-gnu.tar.gz"
-                sha256 "SHA_LINUX_INTEL_PLACEHOLDER"
-              end
-            end
+  on_linux do
+    on_arm do
+      url "https://github.com/rustledger/rustledger/releases/download/vVERSION_PLACEHOLDER/rustledger-vVERSION_PLACEHOLDER-aarch64-unknown-linux-gnu.tar.gz"
+      sha256 "SHA_LINUX_ARM_PLACEHOLDER"
+    end
+    on_intel do
+      url "https://github.com/rustledger/rustledger/releases/download/vVERSION_PLACEHOLDER/rustledger-vVERSION_PLACEHOLDER-x86_64-unknown-linux-gnu.tar.gz"
+      sha256 "SHA_LINUX_INTEL_PLACEHOLDER"
+    end
+  end
 
-            def install
-              bin.install "rledger-check", "rledger-format", "rledger-query",
-                          "rledger-report", "rledger-doctor", "rledger-extract", "rledger-price"
-              bin.install "bean-check", "bean-format", "bean-query",
-                          "bean-report", "bean-doctor", "bean-extract", "bean-price"
-            end
+  def install
+    # Main CLI
+    bin.install "rledger"
+    bin.install "rledger-lsp"
 
-            test do
-              assert_match version.to_s, shell_output("#{bin}/rledger-check --version")
+    # Bean-compatible aliases
+    bin.install "bean-check", "bean-format", "bean-query",
+                "bean-report", "bean-doctor", "bean-extract", "bean-price"
 
-              # Test basic validation
-              (testpath/"test.beancount").write <<~EOS
-                2024-01-01 open Assets:Bank:Checking USD
-                2024-01-01 open Expenses:Food USD
+    # Generate and install shell completions
+    generate_completions_from_executable(bin/"rledger", "completions")
+  end
 
-                2024-01-15 * "Grocery Store" "Weekly groceries"
-                  Expenses:Food  50.00 USD
-                  Assets:Bank:Checking
-              EOS
-              system "#{bin}/rledger-check", testpath/"test.beancount"
-            end
-          end
-          FORMULA_EOF
+  test do
+    assert_match version.to_s, shell_output("#{bin}/rledger --version")
 
-          # Replace placeholders
-          sed -i "s/VERSION_PLACEHOLDER/${VERSION}/g" Formula/rustledger.rb
-          sed -i "s/SHA_MACOS_ARM_PLACEHOLDER/${SHA_MACOS_ARM}/g" Formula/rustledger.rb
-          sed -i "s/SHA_MACOS_INTEL_PLACEHOLDER/${SHA_MACOS_INTEL}/g" Formula/rustledger.rb
-          sed -i "s/SHA_LINUX_ARM_PLACEHOLDER/${SHA_LINUX_ARM}/g" Formula/rustledger.rb
-          sed -i "s/SHA_LINUX_INTEL_PLACEHOLDER/${SHA_LINUX_INTEL}/g" Formula/rustledger.rb
+    # Test basic validation
+    (testpath/"test.beancount").write <<~BEANCOUNT
+      2024-01-01 open Assets:Bank:Checking USD
+      2024-01-01 open Expenses:Food USD
+
+      2024-01-15 * "Grocery Store" "Weekly groceries"
+        Expenses:Food  50.00 USD
+        Assets:Bank:Checking
+    BEANCOUNT
+    system bin/"rledger", "check", testpath/"test.beancount"
+  end
+end
+FORMULA_EOF
+
+          # Replace placeholders (use | delimiter to avoid issues with special chars)
+          sed -i "s|VERSION_PLACEHOLDER|${VERSION}|g" Formula/rustledger.rb
+          sed -i "s|SHA_MACOS_ARM_PLACEHOLDER|${SHA_MACOS_ARM}|g" Formula/rustledger.rb
+          sed -i "s|SHA_MACOS_INTEL_PLACEHOLDER|${SHA_MACOS_INTEL}|g" Formula/rustledger.rb
+          sed -i "s|SHA_LINUX_ARM_PLACEHOLDER|${SHA_LINUX_ARM}|g" Formula/rustledger.rb
+          sed -i "s|SHA_LINUX_INTEL_PLACEHOLDER|${SHA_LINUX_INTEL}|g" Formula/rustledger.rb
 
       - name: Commit and push
         run: |
