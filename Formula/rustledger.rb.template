@@ -1,0 +1,58 @@
+# Homebrew formula for rustledger
+# https://github.com/rustledger/rustledger
+class Rustledger < Formula
+  desc "Fast, pure Rust implementation of Beancount double-entry accounting"
+  homepage "https://rustledger.github.io"
+  version "{{VERSION}}"
+  license "GPL-3.0-only"
+
+  on_macos do
+    on_arm do
+      url "https://github.com/rustledger/rustledger/releases/download/v{{VERSION}}/rustledger-v{{VERSION}}-aarch64-apple-darwin.tar.gz"
+      sha256 "{{SHA_MACOS_ARM}}"
+    end
+    on_intel do
+      url "https://github.com/rustledger/rustledger/releases/download/v{{VERSION}}/rustledger-v{{VERSION}}-x86_64-apple-darwin.tar.gz"
+      sha256 "{{SHA_MACOS_INTEL}}"
+    end
+  end
+
+  on_linux do
+    on_arm do
+      url "https://github.com/rustledger/rustledger/releases/download/v{{VERSION}}/rustledger-v{{VERSION}}-aarch64-unknown-linux-gnu.tar.gz"
+      sha256 "{{SHA_LINUX_ARM}}"
+    end
+    on_intel do
+      url "https://github.com/rustledger/rustledger/releases/download/v{{VERSION}}/rustledger-v{{VERSION}}-x86_64-unknown-linux-gnu.tar.gz"
+      sha256 "{{SHA_LINUX_INTEL}}"
+    end
+  end
+
+  def install
+    # Main CLI
+    bin.install "rledger"
+    bin.install "rledger-lsp"
+
+    # Bean-compatible aliases
+    bin.install "bean-check", "bean-format", "bean-query",
+                "bean-report", "bean-doctor", "bean-extract", "bean-price"
+
+    # Generate and install shell completions
+    generate_completions_from_executable(bin/"rledger", "completions")
+  end
+
+  test do
+    assert_match version.to_s, shell_output("#{bin}/rledger --version")
+
+    # Test basic validation
+    (testpath/"test.beancount").write <<~BEANCOUNT
+      2024-01-01 open Assets:Bank:Checking USD
+      2024-01-01 open Expenses:Food USD
+
+      2024-01-15 * "Grocery Store" "Weekly groceries"
+        Expenses:Food  50.00 USD
+        Assets:Bank:Checking
+    BEANCOUNT
+    system bin/"rledger", "check", testpath/"test.beancount"
+  end
+end
