@@ -1,51 +1,58 @@
 # Homebrew formula for rustledger
+# https://github.com/rustledger/rustledger
 class Rustledger < Formula
   desc "Fast, pure Rust implementation of Beancount double-entry accounting"
   homepage "https://rustledger.github.io"
-  version "0.1.0"
+  version "0.8.8"
   license "GPL-3.0-only"
 
   on_macos do
     on_arm do
-      url "https://github.com/rustledger/rustledger/releases/download/v0.1.0/rustledger-v0.1.0-aarch64-apple-darwin.tar.gz"
-      sha256 "fc2d01ec90d188e8435a0ef0d941edc8375bfa7ea11cc59d7aeef745027e0e45"
+      url "https://github.com/rustledger/rustledger/releases/download/v0.8.8/rustledger-v0.8.8-aarch64-apple-darwin.tar.gz"
+      sha256 "11bcf76dda1679d3861ffadb458d945f7f287e97047d133a286e0c5bd04342ee"
     end
     on_intel do
-      url "https://github.com/rustledger/rustledger/releases/download/v0.1.0/rustledger-v0.1.0-x86_64-apple-darwin.tar.gz"
-      sha256 "c866d346dc5d62626e68214371ec8e7dc17c5353047503a170323d291ff5487a"
+      url "https://github.com/rustledger/rustledger/releases/download/v0.8.8/rustledger-v0.8.8-x86_64-apple-darwin.tar.gz"
+      sha256 "1db4fb0ac8656eb2e963cc1b2f521b00e9f29803f3c927750156ff78a426359c"
     end
   end
 
   on_linux do
     on_arm do
-      url "https://github.com/rustledger/rustledger/releases/download/v0.1.0/rustledger-v0.1.0-aarch64-unknown-linux-gnu.tar.gz"
-      sha256 "fdeacb608b2bbc11b9ce5865bf79461e256235af451a01ce16edbf326790fb55"
+      url "https://github.com/rustledger/rustledger/releases/download/v0.8.8/rustledger-v0.8.8-aarch64-unknown-linux-gnu.tar.gz"
+      sha256 "d6062b9fbf2175fccb9c03e1b4d89000ca7ee68e013bd160dff369f3de799a89"
     end
     on_intel do
-      url "https://github.com/rustledger/rustledger/releases/download/v0.1.0/rustledger-v0.1.0-x86_64-unknown-linux-gnu.tar.gz"
-      sha256 "43058e026e221336587a95d0dd8576ce54757f376435f7a2eb25ae2b8186656e"
+      url "https://github.com/rustledger/rustledger/releases/download/v0.8.8/rustledger-v0.8.8-x86_64-unknown-linux-gnu.tar.gz"
+      sha256 "2f1503a1d05ba0638882a697ca567230a9aaac2df227c7e6244207a88b31abf4"
     end
   end
 
   def install
-    bin.install "rledger-check", "rledger-format", "rledger-query",
-                "rledger-report", "rledger-doctor", "rledger-extract", "rledger-price"
+    # Main CLI
+    bin.install "rledger"
+    bin.install "rledger-lsp"
+
+    # Bean-compatible aliases
     bin.install "bean-check", "bean-format", "bean-query",
                 "bean-report", "bean-doctor", "bean-extract", "bean-price"
+
+    # Generate and install shell completions
+    generate_completions_from_executable(bin/"rledger", "completions")
   end
 
   test do
-    assert_match version.to_s, shell_output("#{bin}/rledger-check --version")
+    assert_match version.to_s, shell_output("#{bin}/rledger --version")
 
     # Test basic validation
-    (testpath/"test.beancount").write <<~EOS
+    (testpath/"test.beancount").write <<~BEANCOUNT
       2024-01-01 open Assets:Bank:Checking USD
       2024-01-01 open Expenses:Food USD
 
       2024-01-15 * "Grocery Store" "Weekly groceries"
         Expenses:Food  50.00 USD
         Assets:Bank:Checking
-    EOS
-    system "#{bin}/rledger-check", testpath/"test.beancount"
+    BEANCOUNT
+    system bin/"rledger", "check", testpath/"test.beancount"
   end
 end
