@@ -29,13 +29,8 @@ class Rustledger < Formula
   end
 
   def install
-    # Main CLI
     bin.install "rledger"
     bin.install "rledger-lsp"
-
-    # Bean-compatible aliases
-    bin.install "bean-check", "bean-format", "bean-query",
-                "bean-report", "bean-doctor", "bean-extract", "bean-price"
 
     # Generate and install shell completions
     generate_completions_from_executable(bin/"rledger", "completions")
