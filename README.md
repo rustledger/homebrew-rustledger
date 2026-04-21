@@ -30,15 +30,14 @@ After installation, you'll have access to:
 
 | Command | Description |
 |---------|-------------|
-| `rledger-check` | Validate ledger files |
-| `rledger-format` | Auto-format beancount files |
-| `rledger-query` | Run BQL queries |
-| `rledger-report` | Generate reports |
-| `rledger-doctor` | Debugging tools |
-| `rledger-extract` | Import from CSV/OFX |
-| `rledger-price` | Fetch commodity prices |
-
-Python beancount compatibility aliases (`bean-*`) are also included.
+| `rledger check` | Validate ledger files |
+| `rledger format` | Auto-format beancount files |
+| `rledger query` | Run BQL queries |
+| `rledger report` | Generate reports |
+| `rledger doctor` | Debugging tools |
+| `rledger extract` | Import from CSV/OFX |
+| `rledger price` | Fetch commodity prices |
+| `rledger-lsp` | Language Server Protocol server |
 
 ## Links
 
